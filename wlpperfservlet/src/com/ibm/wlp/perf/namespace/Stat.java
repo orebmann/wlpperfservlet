@@ -185,7 +185,7 @@ public class Stat {
     	}
     }
     
-    private DoubleStatistic getDoubleStatistic(String name2) {
+    private DoubleStatistic getDoubleStatistic(String name) {
     	Iterator<Object> it = getAverageStatisticOrBoundedRangeStatisticOrCountStatistic().iterator();
     	while (it.hasNext()) {
     		Object obj = it.next(); 
