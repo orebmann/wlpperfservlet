@@ -28,16 +28,11 @@ import com.ibm.wlp.perf.namespace.Stat;
 public class XMLPrinter {
 
 	final protected ObjectFactory objectFactory = new ObjectFactory();
-	final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+	final protected MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
 	protected static long startTime;
 	static {
 		startTime = System.currentTimeMillis();
-	}
-
-	protected DoubleStatistic _createDoubleStatistic(double count, String name, long sampleTime, String unit) {
-
-		return getObjectFactory().createDoubleStatistic(name, count, unit, sampleTime, startTime);
 	}
 
 	protected DoubleStatistic createDoubleStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
@@ -51,6 +46,22 @@ public class XMLPrinter {
 		return getObjectFactory().createDoubleStatistic(name, count, unit, sampleTime, startTime);
 	}
 
+	protected CountStatistic createCountStatistik(String name, long count, long sampleTime, String unit) {
+		return getObjectFactory().createCountStatistic(name, count, unit, sampleTime, startTime);	
+	}
+	
+	protected CountStatistic createCountStatisticFromInteger(ObjectName mbean, String name, long sampleTime, String unit) {
+
+		int count = 0;
+		try {
+			count = (Integer) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return createCountStatistik(name,(long) count, sampleTime, unit);
+	}
+	
 	protected CountStatistic createCountStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
 
 		long count = 0l;
@@ -60,108 +71,89 @@ public class XMLPrinter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return getObjectFactory().createCountStatistic(name, count, unit, sampleTime, startTime);
-	}
-
-	protected CountStatistic _createCreateCountStatistic(long count, String name, long sampleTime, String unit) {
-
-		return getObjectFactory().createCountStatistic(name, count, unit, sampleTime, startTime);
+		return createCountStatistik(name, count, sampleTime, unit);
 	}
 
 	protected HashSet<String> determineWebapps() {
 
 		final String SERVLET_STATS_MBEAN = "WebSphere:type=ServletStats,name=*";
 
-		HashSet<ObjectName> servletStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
+		HashSet<ObjectName> servletStatsMBeans = retrieveStatMBeans(SERVLET_STATS_MBEAN);
+		HashSet<String> webapps = new HashSet<String>();
 
-		try {
-			name = new ObjectName(SERVLET_STATS_MBEAN);
+		// determine all webapps
+		for (ObjectName mbean : servletStatsMBeans) {
 
-			servletStatsMBeans.addAll(getmBeanServer().queryNames(name, null));
-			HashSet<String> webapps = new HashSet<String>();
-
-			// determine all webapps
-			for (ObjectName mbean : servletStatsMBeans) {
-
-				System.out.println(mbean.getCanonicalName());
-				String appName;
-				try {
-					appName = (String) getmBeanServer().getAttribute(mbean, "AppName");
-					webapps.add(appName);
-				} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
-						| MBeanException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			System.out.println(mbean.getCanonicalName());
+			String appName;
+			try {
+				appName = (String) getmBeanServer().getAttribute(mbean, "AppName");
+				webapps.add(appName);
+			} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
+					| MBeanException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			return webapps;
-		} catch (MalformedObjectNameException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
 		}
-
-		return new HashSet<String>();
+		return webapps;
 	}
 
+	protected HashSet<ObjectName> retrieveStatMBeans(String name) {
+	
+		ObjectName objectName;
+		try {
+			objectName = new ObjectName(name);
+			HashSet<ObjectName> statMBeans = new HashSet<ObjectName>();
+			statMBeans.addAll(getmBeanServer().queryNames(objectName, null));
+			
+			return statMBeans;
+		} catch (MalformedObjectNameException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	public Stat createServletStats() {
 		// WebSphere:type=ServletStats,name=<AppName>.<ServletName>
 		final String SERVLET_STATS_MBEAN = "WebSphere:type=ServletStats,name=";
 
-		HashSet<ObjectName> servletStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
-		Stat allServletStats = null;
+		long lastSampleTime = System.currentTimeMillis();
+		HashSet<String> webapps = determineWebapps();
 
-		try {
+		if (!webapps.isEmpty()) {
+			
+			Stat allServletStats = null;
+			allServletStats = new Stat("Web Applications");
+			for (String webapp : webapps) {
 
-			long lastSampleTime = System.currentTimeMillis();
-			HashSet<String> webapps = determineWebapps();
+				HashSet<ObjectName> servletStatMBeans = retrieveStatMBeans(SERVLET_STATS_MBEAN + webapp + "*");
+				if (servletStatMBeans.size() != 0) {
 
-			if (!webapps.isEmpty()) {
-
-				allServletStats = new Stat("Web Applications");
-
-				for (String webapp : webapps) {
-
-					name = new ObjectName(SERVLET_STATS_MBEAN + webapp + "*");
-					HashSet<ObjectName> servletStatMBeans = new HashSet<ObjectName>();
-					servletStatMBeans.addAll(getmBeanServer().queryNames(name, null));
-					int servletStatMBeansSize = servletStatMBeans.size();
 					Stat webappStats = null;
-
-					if (servletStatMBeansSize != 0) {
-
-						webappStats = new Stat(webapp);
+					webappStats = new Stat(webapp);
+					for (ObjectName mbean : servletStatMBeans) {
+					
+						String servletName;
 						Stat servletStats = null;
+						try {
+							servletName = (String) getmBeanServer().getAttribute(mbean, "ServletName");
 
-						for (ObjectName mbean : servletStatMBeans) {
-							String servletName;
-							try {
-								servletName = (String) getmBeanServer().getAttribute(mbean, "ServletName");
-
-								servletStats = new Stat(servletName);
-
-								servletStats
-										.addStat(createCountStatistic(mbean, "RequestCount", lastSampleTime, "N/A"));
-								servletStats.addStat(
-										createDoubleStatistic(mbean, "ResponseTime", lastSampleTime, "NANOSECOND"));
-
-								webappStats.addNewStat(servletStats);
-							} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
-									| MBeanException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+							servletStats = new Stat(servletName);
+							servletStats.addStat(createCountStatistic(mbean, "RequestCount", lastSampleTime, "N/A"));
+							servletStats.addStat(createDoubleStatistic(mbean, "ResponseTime", lastSampleTime, "NANOSECOND"));
+							
+							webappStats.addNewStat(servletStats);
+						} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
+								| MBeanException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-						allServletStats.addNewStat(webappStats);
 					}
+					allServletStats.addNewStat(webappStats);
 				}
-				return allServletStats;
 			}
-		} catch (MalformedObjectNameException e) {
-
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return allServletStats;
 		}
 		return null;
 	}
@@ -170,37 +162,22 @@ public class XMLPrinter {
 
 		final String JVM_STATS_MBEAN = "WebSphere:type=JvmStats";
 
-		HashSet<ObjectName> jvmStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
-		Stat jvmStat = null;
+		long lastSampleTime = System.currentTimeMillis();
+		HashSet<ObjectName> jvmStatsMBeans = retrieveStatMBeans(JVM_STATS_MBEAN);
 
-		try {
+		if (jvmStatsMBeans.size() == 1) {
+			
+			Stat jvmStat = new Stat("JVM Runtime");
+			for (ObjectName mbean : jvmStatsMBeans) {
 
-			name = new ObjectName(JVM_STATS_MBEAN);
-			jvmStatsMBeans.addAll(getmBeanServer().queryNames(name, null));
-
-			// should be always 1
-			int jvmStatsMBeansSize = jvmStatsMBeans.size();
-			long lastSampleTime = System.currentTimeMillis();
-
-			if (jvmStatsMBeansSize == 1) {
-
-				jvmStat = new Stat("JVM Runtime");
-				for (ObjectName mbean : jvmStatsMBeans) {
-
-					jvmStat.addStat(createCountStatistic(mbean, "FreeMemory", lastSampleTime, "N/A"));
-					jvmStat.addStat(createCountStatistic(mbean, "UsedMemory", lastSampleTime, "N/A"));
-					jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
-					jvmStat.addStat(createCountStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
-					jvmStat.addStat(createCountStatistic(mbean, "UpTime", lastSampleTime, "N/A"));
-					jvmStat.addStat(createDoubleStatistic(mbean, "ProcessCPU", lastSampleTime, "N/A"));
-				}
-				return jvmStat;
+				jvmStat.addStat(createCountStatistic(mbean, "FreeMemory", lastSampleTime, "N/A"));
+				jvmStat.addStat(createCountStatistic(mbean, "UsedMemory", lastSampleTime, "N/A"));
+				jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
+				jvmStat.addStat(createCountStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
+				jvmStat.addStat(createCountStatistic(mbean, "UpTime", lastSampleTime, "N/A"));
+				jvmStat.addStat(createDoubleStatistic(mbean, "ProcessCPU", lastSampleTime, "N/A"));
 			}
-		} catch (MalformedObjectNameException e) {
-
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return jvmStat;
 		}
 		return null;
 	}
@@ -208,40 +185,26 @@ public class XMLPrinter {
 	public Stat createSessionStats() {
 		final String SESSION_STATS_MBEAN = "WebSphere:type=SessionStats,name=*";
 
-		HashSet<ObjectName> sessionStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
-		Stat sessionStats = null;
+		long lastSampleTime = System.currentTimeMillis();
+		HashSet<ObjectName> sessionStatsMBeans = retrieveStatMBeans(SESSION_STATS_MBEAN);
 
-		try {
+		if (sessionStatsMBeans.size() != 0) {
 
-			name = new ObjectName(SESSION_STATS_MBEAN);
-			sessionStatsMBeans.addAll(getmBeanServer().queryNames(name, null));
-			int sessionStatsMBeansSize = sessionStatsMBeans.size();
-			long lastSampleTime = System.currentTimeMillis();
+			Stat sessionStats = new Stat("Servlet Session Manager");
+			for (ObjectName mbean : sessionStatsMBeans) {
 
-			if (sessionStatsMBeansSize != 0) {
+				System.out.println(mbean.getCanonicalName());
+				Stat sessionStat = new Stat(mbean.getKeyProperty("name"));
 
-				sessionStats = new Stat("Servlet Session Manager");
-
-				for (ObjectName mbean : sessionStatsMBeans) {
-
-					System.out.println(mbean.getCanonicalName());
-					Stat sessionStat = new Stat(mbean.getKeyProperty("name"));
-
-					sessionStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
-					sessionStat.addStat(createCountStatistic(mbean, "LiveCount", lastSampleTime, "N/A"));
-					sessionStat.addStat(createCountStatistic(mbean, "ActiveCount", lastSampleTime, "N/A"));
-					sessionStat.addStat(createCountStatistic(mbean, "InvalidatedCount", lastSampleTime, "N/A"));
-					sessionStat
-							.addStat(createCountStatistic(mbean, "InvalidatedCountbyTimeout", lastSampleTime, "N/A"));
-					sessionStats.addNewStat(sessionStat);
-				}
-				return sessionStats;
+				sessionStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
+				sessionStat.addStat(createCountStatistic(mbean, "LiveCount", lastSampleTime, "N/A"));
+				sessionStat.addStat(createCountStatistic(mbean, "ActiveCount", lastSampleTime, "N/A"));
+				sessionStat.addStat(createCountStatistic(mbean, "InvalidatedCount", lastSampleTime, "N/A"));
+				sessionStat
+						.addStat(createCountStatistic(mbean, "InvalidatedCountbyTimeout", lastSampleTime, "N/A"));
+				sessionStats.addNewStat(sessionStat);
 			}
-		} catch (MalformedObjectNameException e) {
-
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return sessionStats;
 		}
 		return null;
 	}
@@ -252,49 +215,26 @@ public class XMLPrinter {
 		// "WebSphere:type=ThreadPoolStats,name=Default Executor";
 		final String THREADPOOL_STATS_MBEAN = "WebSphere:type=ThreadPoolStats,name=*";
 
-		HashSet<ObjectName> threadPoolStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
+		long lastSampleTime = System.currentTimeMillis();
+		HashSet<ObjectName> threadPoolStatsMBeans = retrieveStatMBeans(THREADPOOL_STATS_MBEAN);
 
-		try {
+		// should be always 1
+		if (threadPoolStatsMBeans.size() != 0) {
 
-			name = new ObjectName(THREADPOOL_STATS_MBEAN);
-			threadPoolStatsMBeans.addAll(getmBeanServer().queryNames(name, null));
+			Stat threadsStats = new Stat("Thread Pools");
+			for (ObjectName mbean : threadPoolStatsMBeans) {
 
-			// should be always 1
-			int threadPoolStatsMBeansSize = threadPoolStatsMBeans.size();
-			long lastSampleTime = System.currentTimeMillis();
+				System.out.println(mbean.getCanonicalName());
+				Stat threadStat = new Stat(mbean.getKeyProperty("name"));
 
-			if (threadPoolStatsMBeansSize != 0) {
+				threadStat.addStat(createCountStatisticFromInteger(mbean, "ActiveThreads",
+							lastSampleTime, "N/A"));
+				threadStat.addStat(
+							createCountStatisticFromInteger(mbean, "PoolSize", lastSampleTime, "N/A"));
 
-				Stat threadsStats = new Stat("Thread Pools");
-				for (ObjectName mbean : threadPoolStatsMBeans) {
-
-					System.out.println(mbean.getCanonicalName());
-					Stat threadStat = new Stat(mbean.getKeyProperty("name"));
-					try {
-
-						int activeThreads = (Integer) getmBeanServer().getAttribute(mbean, "ActiveThreads");
-						threadStat.addStat(_createCreateCountStatistic((long) activeThreads, "ActiveThreads",
-								lastSampleTime, "N/A"));
-
-						int poolSize = (Integer) getmBeanServer().getAttribute(mbean, "PoolSize");
-						threadStat.addStat(
-								_createCreateCountStatistic((long) poolSize, "PoolSize", lastSampleTime, "N/A"));
-
-						threadsStats.addNewStat(threadStat);
-
-					} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
-							| MBeanException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				return threadsStats;
+				threadsStats.addNewStat(threadStat);
 			}
-		} catch (MalformedObjectNameException e) {
-
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return threadsStats;
 		}
 		return null;
 	}
@@ -312,43 +252,30 @@ public class XMLPrinter {
 	protected Stat createConnectionPoolStats(String statsName, String filter) {
 		final String CONNPOOL_STATS_MBEAN = "WebSphere:type=ConnectionPoolStats,name=";
 
-		HashSet<ObjectName> connectionPoolStatsMBeans = new HashSet<ObjectName>();
-		ObjectName name;
-		Stat jdbcStats = null;
-
 		if (filter == null)
 			filter = "*";
 
-		try {
+		long lastSampleTime = System.currentTimeMillis();
+		HashSet<ObjectName> connectionPoolStatsMBeans = retrieveStatMBeans(CONNPOOL_STATS_MBEAN);
 
-			name = new ObjectName(CONNPOOL_STATS_MBEAN + filter);
-			connectionPoolStatsMBeans.addAll(getmBeanServer().queryNames(name, null));
-			int connectionPoolStatsMBeansSize = connectionPoolStatsMBeans.size();
-			long lastSampleTime = System.currentTimeMillis();
+		if (connectionPoolStatsMBeans.size() != 0) {
 
-			if (connectionPoolStatsMBeansSize != 0) {
+			Stat jdbcStats = new Stat(statsName);
+			for (ObjectName mbean : connectionPoolStatsMBeans) {
 
-				jdbcStats = new Stat(statsName);
-				for (ObjectName mbean : connectionPoolStatsMBeans) {
+				System.out.println(mbean.getCanonicalName());
+				Stat jdbcStat = new Stat(mbean.getKeyProperty("name"));
 
-					System.out.println(mbean.getCanonicalName());
-					Stat jdbcStat = new Stat(mbean.getKeyProperty("name"));
-
-					jdbcStat.addStat(createCountStatistic(mbean, "ConnectionHandleCount", lastSampleTime, "N/A"));
-					jdbcStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
-					jdbcStat.addStat(createCountStatistic(mbean, "DestroyCount", lastSampleTime, "N/A"));
-					jdbcStat.addStat(createCountStatistic(mbean, "FreeConnectionCount", lastSampleTime, "N/A"));
-					jdbcStat.addStat(createDoubleStatistic(mbean, "InUseTime", lastSampleTime, "MILLISECOND"));
-					jdbcStat.addStat(createCountStatistic(mbean, "ManagedConnectionCount", lastSampleTime, "N/A"));
-					jdbcStat.addStat(createDoubleStatistic(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
-					jdbcStats.addNewStat(jdbcStat);
-				}
-				return jdbcStats;
+				jdbcStat.addStat(createCountStatistic(mbean, "ConnectionHandleCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createCountStatistic(mbean, "DestroyCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createCountStatistic(mbean, "FreeConnectionCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createDoubleStatistic(mbean, "InUseTime", lastSampleTime, "MILLISECOND"));
+				jdbcStat.addStat(createCountStatistic(mbean, "ManagedConnectionCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createDoubleStatistic(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
+				jdbcStats.addNewStat(jdbcStat);
 			}
-		} catch (MalformedObjectNameException e) {
-
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return jdbcStats;
 		}
 		return null;
 	}
