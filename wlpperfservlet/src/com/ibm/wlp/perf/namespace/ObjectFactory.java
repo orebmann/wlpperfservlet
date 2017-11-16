@@ -44,8 +44,8 @@ public class ObjectFactory {
         return new DoubleStatistic();
     }
 
-    public DoubleStatistic createDoubleStatistic(String name, double count, String unit, long sampleTime, long startTime) {
-        return new DoubleStatistic(name, count, unit, sampleTime, startTime);
+    public DoubleStatistic createDoubleStatistic(String name, short id, double count, String unit, long sampleTime, long startTime) {
+        return new DoubleStatistic(name, id, count, unit, sampleTime, startTime);
     }
     
     /**
@@ -81,8 +81,8 @@ public class ObjectFactory {
     public CountStatistic createCountStatistic() {
         return new CountStatistic();
     }
-    public CountStatistic createCountStatistic(String name, long count, String unit, long sampleTime, long startTime) {
-        return new CountStatistic(name, count, unit, sampleTime, startTime);
+    public CountStatistic createCountStatistic(String name, short id, long count, String unit, long sampleTime, long startTime) {
+        return new CountStatistic(name, id, count, unit, sampleTime, startTime);
     }
     /**
      * Create an instance of {@link RangeStatistic }

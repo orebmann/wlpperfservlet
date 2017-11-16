@@ -68,9 +68,10 @@ public class CountStatistic {
       super();	
     }
     
-    public CountStatistic(String name, long count, String unit, long sampleTime, long startTime) {
+    public CountStatistic(String name, short id, long count, String unit, long sampleTime, long startTime) {
     	super();
     	this.name = name;
+    	this.id = id;
     	this.count = count;
     	this.unit = unit;
     	this.lastSampleTime = sampleTime;
@@ -82,6 +83,7 @@ public class CountStatistic {
 		// TODO Auto-generated constructor stub
     	super();
     	this.name = stat.name;
+    	this.id = stat.id;
     	this.count = stat.count;
     	this.unit = stat.unit;
     	this.lastSampleTime = stat.lastSampleTime;
@@ -134,7 +136,7 @@ public class CountStatistic {
      */
     public short getId() {
         //return id;
-        return 99;
+        return id;
     }
 
     /**

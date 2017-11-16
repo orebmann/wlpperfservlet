@@ -2,6 +2,7 @@ package com.ibm.wlp.perf.servlet;
 
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import javax.management.AttributeNotFoundException;
@@ -31,10 +32,42 @@ public class XMLPrinter {
 	final protected MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
 	protected static long startTime;
+	protected static HashMap<String, Short> ids;
 	static {
 		startTime = System.currentTimeMillis();
 	}
-
+	
+	static {
+		ids = new HashMap<String, Short>();
+		// JVMs
+		ids.put("FreeMemory", (short)2);
+		ids.put("UsedMemory", (short)3);
+		ids.put("GcCount", (short)11);
+		ids.put("GcTime", (short)13);
+		ids.put("UpTime", (short)4);
+		ids.put("ProcessCPU", (short)5);
+		// Servlets
+		ids.put("RequestCount", (short)11);
+		ids.put("ResponseTime", (short)13);
+		// Sessions
+		ids.put("CreateCount", (short)1);
+		ids.put("LiveCount", (short)7);
+		ids.put("ActiveCount", (short)6);
+		ids.put("InvalidatedCount", (short)2);
+		ids.put("InvalidatedCountbyTimeout", (short)16);
+		// Threads
+		ids.put("ActiveThreads", (short)3);
+		ids.put("PoolSize", (short)4);
+		// Connection Pool/s
+		ids.put("ConnectionHandleCount", (short)15);
+		ids.put("CreateCount", (short)1);
+		ids.put("DestroyCount", (short)2);
+		ids.put("FreeConnectionCount", (short)6);
+		ids.put("InUseTime", (short)12);
+		ids.put("ManagedConnectionCount", (short)13);
+		ids.put("WaitTime", (short)4);
+	}
+	
 	protected DoubleStatistic createDoubleStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
 		double count = 0;
 		try {
@@ -43,11 +76,11 @@ public class XMLPrinter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return getObjectFactory().createDoubleStatistic(name, count, unit, sampleTime, startTime);
+		return getObjectFactory().createDoubleStatistic(name, getId(name), count, unit, sampleTime, startTime);
 	}
 
-	protected CountStatistic createCountStatistik(String name, long count, long sampleTime, String unit) {
-		return getObjectFactory().createCountStatistic(name, count, unit, sampleTime, startTime);	
+	protected CountStatistic createCountStatistik(String name, short id, long count, long sampleTime, String unit) {
+		return getObjectFactory().createCountStatistic(name, id, count, unit, sampleTime, startTime);	
 	}
 	
 	protected CountStatistic createCountStatisticFromInteger(ObjectName mbean, String name, long sampleTime, String unit) {
@@ -59,7 +92,7 @@ public class XMLPrinter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return createCountStatistik(name,(long) count, sampleTime, unit);
+		return createCountStatistik(name, getId(name), (long) count, sampleTime, unit);
 	}
 	
 	protected CountStatistic createCountStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
@@ -71,7 +104,7 @@ public class XMLPrinter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return createCountStatistik(name, count, sampleTime, unit);
+		return createCountStatistik(name, getId(name), count, sampleTime, unit);
 	}
 
 	protected HashSet<String> determineWebapps() {
@@ -173,6 +206,7 @@ public class XMLPrinter {
 				jvmStat.addStat(createCountStatistic(mbean, "FreeMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UsedMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
+				//TimeStatistic
 				jvmStat.addStat(createCountStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UpTime", lastSampleTime, "N/A"));
 				jvmStat.addStat(createDoubleStatistic(mbean, "ProcessCPU", lastSampleTime, "N/A"));
@@ -227,7 +261,7 @@ public class XMLPrinter {
 				System.out.println(mbean.getCanonicalName());
 				Stat threadStat = new Stat(mbean.getKeyProperty("name"));
 
-				threadStat.addStat(createCountStatisticFromInteger(mbean, "ActiveThreads",
+				threadStat.addStat(createCountStatisticFromInteger(mbean, "ActiveThreads", 
 							lastSampleTime, "N/A"));
 				threadStat.addStat(
 							createCountStatisticFromInteger(mbean, "PoolSize", lastSampleTime, "N/A"));
@@ -239,6 +273,10 @@ public class XMLPrinter {
 		return null;
 	}
 
+	protected short getId(String name) {
+		return ids.get(name);
+	}
+	
 	public Stat createJMSConnectionPoolStats() {
 
 		return createConnectionPoolStats("JMS Connection Pools", "jms*");
@@ -270,8 +308,10 @@ public class XMLPrinter {
 				jdbcStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
 				jdbcStat.addStat(createCountStatistic(mbean, "DestroyCount", lastSampleTime, "N/A"));
 				jdbcStat.addStat(createCountStatistic(mbean, "FreeConnectionCount", lastSampleTime, "N/A"));
+				//TimeStatistic
 				jdbcStat.addStat(createDoubleStatistic(mbean, "InUseTime", lastSampleTime, "MILLISECOND"));
 				jdbcStat.addStat(createCountStatistic(mbean, "ManagedConnectionCount", lastSampleTime, "N/A"));
+				//TimeStatistic
 				jdbcStat.addStat(createDoubleStatistic(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
 				jdbcStats.addNewStat(jdbcStat);
 			}
