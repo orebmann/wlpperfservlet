@@ -208,6 +208,19 @@ public class Stat {
      			brs.setValue(value);
     		}
     	  }
+    	  if (stat instanceof RangeStatistic) {
+    		  
+    		RangeStatistic rs = getRangeStatistic(((RangeStatistic) stat).getName());
+    		if (rs == null) {
+    			
+    			rs = new RangeStatistic((RangeStatistic) stat);
+    			averageStatisticOrBoundedRangeStatisticOrCountStatistic.add(rs);
+    		} else {
+    		   
+     			long value = (((RangeStatistic) stat).getValue() + rs.getValue()) / 2;
+     			rs.setValue(value);
+    		}
+    	  }
     	}
     }
     private BoundedRangeStatistic getBoundedRangeStatistic(String name) {
@@ -217,6 +230,18 @@ public class Stat {
     		if (obj instanceof BoundedRangeStatistic) {
       		  if (((BoundedRangeStatistic) obj).getName().equals(name))
                 return (BoundedRangeStatistic) obj;
+      	  }
+    	}
+        return null;
+	}
+    
+    private RangeStatistic getRangeStatistic(String name) {
+    	Iterator<Object> it = getAverageStatisticOrBoundedRangeStatisticOrCountStatistic().iterator();
+    	while (it.hasNext()) {
+    		Object obj = it.next(); 
+    		if (obj instanceof RangeStatistic) {
+      		  if (((RangeStatistic) obj).getName().equals(name))
+                return (RangeStatistic) obj;
       	  }
     	}
         return null;

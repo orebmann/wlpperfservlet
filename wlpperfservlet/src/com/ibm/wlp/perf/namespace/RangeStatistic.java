@@ -61,6 +61,8 @@ public class RangeStatistic {
     public RangeStatistic() {
     	super();
     }
+    
+
     public RangeStatistic(String name, short id, long value, String unit, long sampleTime, long startTime) {
     	super();
     	this.name = name;
@@ -71,7 +73,7 @@ public class RangeStatistic {
     	this.startTime = startTime;
     }
     
-    public RangeStatistic(BoundedRangeStatistic stat) {
+    public RangeStatistic(RangeStatistic stat) {
 		// TODO Auto-generated constructor stub
     	super();
     	this.name = stat.name;

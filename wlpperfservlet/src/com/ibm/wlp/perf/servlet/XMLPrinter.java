@@ -43,32 +43,32 @@ public class XMLPrinter {
 	static {
 		ids = new HashMap<String, Short>();
 		// JVMs
-		ids.put("FreeMemory", (short)2);
-		ids.put("UsedMemory", (short)3);
-		ids.put("GcCount", (short)11);
-		ids.put("GcTime", (short)13);
-		ids.put("UpTime", (short)4);
-		ids.put("ProcessCPU", (short)5);
+		ids.put("FreeMemory", (short)2);                 // CountStatistic
+		ids.put("UsedMemory", (short)3);                 // CountStatistic
+		ids.put("GcCount", (short)11);                   // CountStatistic
+		ids.put("GcTime", (short)13);                    // TimeStatistic
+		ids.put("UpTime", (short)4);                     // CountStatistic
+		ids.put("ProcessCPU", (short)5);                 // CountStatistic
 		// Servlets
-		ids.put("RequestCount", (short)11);
-		ids.put("ResponseTime", (short)13); // ServiceTime
+		ids.put("RequestCount", (short)11);                   // CountStatistic
+		ids.put("ResponseTime", (short)13); // ServiceTime    // TimeStatistic
 		// Sessions
-		ids.put("CreateCount", (short)1);
-		ids.put("LiveCount", (short)7);
-		ids.put("ActiveCount", (short)6);
-		ids.put("InvalidatedCount", (short)2);
-		ids.put("InvalidatedCountbyTimeout", (short)16);
+		ids.put("CreateCount", (short)1);                 // CountStatistic
+		ids.put("LiveCount", (short)7);                   // RangeStatistic
+		ids.put("ActiveCount", (short)6);                 // RangeStatistic
+		ids.put("InvalidatedCount", (short)2);            // CountStatistic
+		ids.put("InvalidatedCountbyTimeout", (short)16);  // CountStatistic
 		// Threads
-		ids.put("ActiveThreads", (short)3);
-		ids.put("PoolSize", (short)4);
+		ids.put("ActiveThreads", (short)3);               // BoundedRangeStatistic
+		ids.put("PoolSize", (short)4);                    // BoundedRangeStatistic
 		// Connection Pool/s
-		ids.put("ConnectionHandleCount", (short)15);
-		ids.put("CreateCount", (short)1);
-		ids.put("DestroyCount", (short)2);
-		ids.put("FreeConnectionCount", (short)6);
-		ids.put("InUseTime", (short)12);
-		ids.put("ManagedConnectionCount", (short)13);
-		ids.put("WaitTime", (short)4);
+		ids.put("ConnectionHandleCount", (short)15);     // CountStatistic
+		ids.put("CreateCount", (short)1);                // CountStatistic
+		ids.put("DestroyCount", (short)2);               // CountStatistic
+		ids.put("FreeConnectionCount", (short)6);        // BoundedRangeStatistic
+		ids.put("InUseTime", (short)12);                 // TimeStatistic
+		ids.put("ManagedConnectionCount", (short)14);    // CountStatistic 
+		ids.put("WaitTime", (short)13);                  // TimeStatistic
 	}
 	protected RangeStatistic createRangeStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
 		long value = 0l;
@@ -146,6 +146,18 @@ public class XMLPrinter {
 		int count = 0;
 		try {
 			count = (Integer) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return createCountStatistik(name, getId(name), (long) count, sampleTime, unit);
+	}
+	
+	protected CountStatistic createCountStatisticFromDouble(ObjectName mbean, String name, long sampleTime, String unit) {
+
+		double count = 0;
+		try {
+			count = (Double) getmBeanServer().getAttribute(mbean, name);
 		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -266,7 +278,7 @@ public class XMLPrinter {
 				jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
 				jvmStat.addStat(createTimeStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UpTime", lastSampleTime, "N/A"));
-				jvmStat.addStat(createDoubleStatistic(mbean, "ProcessCPU", lastSampleTime, "N/A"));
+				jvmStat.addStat(createCountStatisticFromDouble(mbean, "ProcessCPU", lastSampleTime, "N/A"));
 			}
 			return jvmStat;
 		}
@@ -371,6 +383,7 @@ public class XMLPrinter {
 				//TimeStatistic
 				jdbcStat.addStat(createTimeStatisticFromDouble(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
 				jdbcStats.addNewStat(jdbcStat);
+				
 			}
 			return jdbcStats;
 		}
@@ -401,7 +414,7 @@ public class XMLPrinter {
 		if (serverName != null)
 			server = new Server(serverName);
 		else
-			server = new Server();
+			server = new Server("dunmmyserver");
 
 		Stat serverStats = new Stat("server"); 
 		Stat jdbcStats = createJDBCConnectionPoolStats();

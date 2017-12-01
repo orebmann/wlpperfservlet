@@ -60,7 +60,9 @@ public class PerformanceMonitor {
     protected Comments comments;
     @XmlAttribute(name = "responseStatus", required = true)
     protected String responseStatus;
-
+    @XmlAttribute(name = "version")
+    protected String version="17.0.0.31";
+    
     /**
      * Gets the value of the node property.
      * 
