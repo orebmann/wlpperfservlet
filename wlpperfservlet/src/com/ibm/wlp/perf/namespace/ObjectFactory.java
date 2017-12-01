@@ -47,7 +47,17 @@ public class ObjectFactory {
     public DoubleStatistic createDoubleStatistic(String name, short id, double count, String unit, long sampleTime, long startTime) {
         return new DoubleStatistic(name, id, count, unit, sampleTime, startTime);
     }
+ 
+    public RangeStatistic createRangeStatistic(String name, short id, long value, String unit, long sampleTime, long startTime) {
+        return new RangeStatistic(name, id, value, unit, sampleTime, startTime);
+    }
+    public BoundedRangeStatistic createBoundedRangeStatistic(String name, short id, long value, String unit, long sampleTime, long startTime) {
+        return new BoundedRangeStatistic(name, id, value, unit, sampleTime, startTime);
+    }
     
+    public TimeStatistic createTimeStatistic(String name, short id, long totalTime, String unit, long sampleTime, long startTime) {
+        return new TimeStatistic(name, id, totalTime, unit, sampleTime, startTime);
+    }
     /**
      * Create an instance of {@link Stat }
      * 

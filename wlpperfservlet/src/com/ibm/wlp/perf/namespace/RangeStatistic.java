@@ -44,7 +44,43 @@ public class RangeStatistic {
     protected String content;
     @XmlAttribute(name = "unit")
     protected String unit;
-
+    @XmlAttribute(name = "name")
+    protected String name;
+    @XmlAttribute(name = "ID")
+    protected short id;    
+    @XmlAttribute(name = "startTime")
+    protected long startTime;
+    @XmlAttribute(name = "lastSampleTime")
+    protected long lastSampleTime;   
+    @XmlAttribute(name = "mean")
+    protected double mean=0.0;
+    @XmlAttribute(name = "integral")
+    protected double integral=0.0;  
+    @XmlAttribute(name = "value")
+    protected long value;
+    public RangeStatistic() {
+    	super();
+    }
+    public RangeStatistic(String name, short id, long value, String unit, long sampleTime, long startTime) {
+    	super();
+    	this.name = name;
+    	this.id = id;
+    	this.value = value;
+    	this.unit = unit;
+    	this.lastSampleTime = sampleTime;
+    	this.startTime = startTime;
+    }
+    
+    public RangeStatistic(BoundedRangeStatistic stat) {
+		// TODO Auto-generated constructor stub
+    	super();
+    	this.name = stat.name;
+    	this.id = stat.id;
+    	this.value = stat.value;
+    	this.unit = stat.unit;
+    	this.lastSampleTime = stat.lastSampleTime;
+    	this.startTime = stat.startTime;
+	}
     /**
      * Ruft den Wert der Eigenschaft content ab.
      * 
@@ -92,5 +128,61 @@ public class RangeStatistic {
     public void setUnit(String value) {
         this.unit = value;
     }
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public short getId() {
+		return id;
+	}
+
+	public void setId(short id) {
+		this.id = id;
+	}
+
+	public long getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(long startTime) {
+		this.startTime = startTime;
+	}
+
+	public long getLastSampleTime() {
+		return lastSampleTime;
+	}
+
+	public void setLastSampleTime(long lastSampleTime) {
+		this.lastSampleTime = lastSampleTime;
+	}
+
+	public double getMean() {
+		return mean;
+	}
+
+	public void setMean(double mean) {
+		this.mean = mean;
+	}
+
+	public double getIntegral() {
+		return integral;
+	}
+
+	public void setIntegral(double integral) {
+		this.integral = integral;
+	}
+
+	public long getValue() {
+		return value;
+	}
+
+	public void setValue(long value) {
+		this.value = value;
+	}
 
 }

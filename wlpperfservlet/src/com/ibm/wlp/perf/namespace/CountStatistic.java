@@ -42,12 +42,12 @@ public class CountStatistic {
 
     @XmlValue
     protected String content;
+    @XmlAttribute(name = "count")
+    protected long count;
     @XmlAttribute(name = "name")
     protected String name;
     @XmlAttribute(name = "ID")
     protected short id;    
-    @XmlAttribute(name = "count")
-    protected long count;
     @XmlAttribute(name = "startTime")
     protected long startTime;
     @XmlAttribute(name = "lastSampleTime")
@@ -76,7 +76,6 @@ public class CountStatistic {
     	this.unit = unit;
     	this.lastSampleTime = sampleTime;
     	this.startTime = startTime;
-    	// this.id=99
     }
     
     public CountStatistic(CountStatistic stat) {
@@ -88,7 +87,6 @@ public class CountStatistic {
     	this.unit = stat.unit;
     	this.lastSampleTime = stat.lastSampleTime;
     	this.startTime = stat.startTime;
-    	// this.id = 99
 	}
 
 	/**

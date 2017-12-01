@@ -12,7 +12,7 @@ import javax.xml.bind.JAXBException;
 /**
  * Servlet implementation class PerfServlet
  */
-@WebServlet({"/PerfServlet", "/ps", "/"})
+@WebServlet({"/PerfServlet", "/ps"})
 public class PerfServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        

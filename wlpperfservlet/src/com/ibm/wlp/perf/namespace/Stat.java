@@ -182,9 +182,57 @@ public class Stat {
      			ds.setCount(newCount);
     		}
     	  }
+    	  if (stat instanceof TimeStatistic) {
+    		  
+    		TimeStatistic ts = getTimeStatistic(((TimeStatistic) stat).getName());
+    		if (ts == null) {
+    			
+    			ts = new TimeStatistic((TimeStatistic) stat);
+    			averageStatisticOrBoundedRangeStatisticOrCountStatistic.add(ts);
+    		} else {
+    		   
+     			long totalTime = (((TimeStatistic) stat).getTotalTime() + ts.getTotalTime()) / 2;
+     			ts.setTotalTime(totalTime);
+    		}
+    	  }
+    	  if (stat instanceof BoundedRangeStatistic) {
+    		  
+    		BoundedRangeStatistic brs = getBoundedRangeStatistic(((BoundedRangeStatistic) stat).getName());
+    		if (brs == null) {
+    			
+    			brs = new BoundedRangeStatistic((BoundedRangeStatistic) stat);
+    			averageStatisticOrBoundedRangeStatisticOrCountStatistic.add(brs);
+    		} else {
+    		   
+     			long value = (((BoundedRangeStatistic) stat).getValue() + brs.getValue()) / 2;
+     			brs.setValue(value);
+    		}
+    	  }
     	}
     }
-    
+    private BoundedRangeStatistic getBoundedRangeStatistic(String name) {
+    	Iterator<Object> it = getAverageStatisticOrBoundedRangeStatisticOrCountStatistic().iterator();
+    	while (it.hasNext()) {
+    		Object obj = it.next(); 
+    		if (obj instanceof BoundedRangeStatistic) {
+      		  if (((BoundedRangeStatistic) obj).getName().equals(name))
+                return (BoundedRangeStatistic) obj;
+      	  }
+    	}
+        return null;
+	}
+
+    private TimeStatistic getTimeStatistic(String name) {
+    	Iterator<Object> it = getAverageStatisticOrBoundedRangeStatisticOrCountStatistic().iterator();
+    	while (it.hasNext()) {
+    		Object obj = it.next(); 
+    		if (obj instanceof TimeStatistic) {
+      		  if (((TimeStatistic) obj).getName().equals(name))
+                return (TimeStatistic) obj;
+      	  }
+    	}
+        return null;
+	}
     private DoubleStatistic getDoubleStatistic(String name) {
     	Iterator<Object> it = getAverageStatisticOrBoundedRangeStatisticOrCountStatistic().iterator();
     	while (it.hasNext()) {
@@ -222,6 +270,9 @@ public class Stat {
         _addStatistic(newStat);
     }  
     public void addStat(RangeStatistic newStat) {
+        _addStatistic(newStat);
+    }   
+    public void addStat(TimeStatistic newStat) {
         _addStatistic(newStat);
     }   
 }

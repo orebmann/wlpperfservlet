@@ -18,13 +18,16 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
+import com.ibm.wlp.perf.namespace.BoundedRangeStatistic;
 import com.ibm.wlp.perf.namespace.CountStatistic;
 import com.ibm.wlp.perf.namespace.DoubleStatistic;
 import com.ibm.wlp.perf.namespace.Node;
 import com.ibm.wlp.perf.namespace.ObjectFactory;
 import com.ibm.wlp.perf.namespace.PerformanceMonitor;
+import com.ibm.wlp.perf.namespace.RangeStatistic;
 import com.ibm.wlp.perf.namespace.Server;
 import com.ibm.wlp.perf.namespace.Stat;
+import com.ibm.wlp.perf.namespace.TimeStatistic;
 
 public class XMLPrinter {
 
@@ -48,7 +51,7 @@ public class XMLPrinter {
 		ids.put("ProcessCPU", (short)5);
 		// Servlets
 		ids.put("RequestCount", (short)11);
-		ids.put("ResponseTime", (short)13);
+		ids.put("ResponseTime", (short)13); // ServiceTime
 		// Sessions
 		ids.put("CreateCount", (short)1);
 		ids.put("LiveCount", (short)7);
@@ -66,6 +69,61 @@ public class XMLPrinter {
 		ids.put("InUseTime", (short)12);
 		ids.put("ManagedConnectionCount", (short)13);
 		ids.put("WaitTime", (short)4);
+	}
+	protected RangeStatistic createRangeStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
+		long value = 0l;
+		try {
+			value = (Long) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return getObjectFactory().createRangeStatistic(name, getId(name), value, unit, sampleTime, startTime);
+	}
+	protected BoundedRangeStatistic createBoundedRangeStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
+		long value = 0l;
+		try {
+			value = (Long) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return getObjectFactory().createBoundedRangeStatistic(name, getId(name), value, unit, sampleTime, startTime);
+	}
+	protected BoundedRangeStatistic createBoundedRangeStatisticFromInteger(ObjectName mbean, String name, long sampleTime, String unit) {
+
+		int value = 0;
+		try {
+			value = (Integer) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return createBoundedRangeStatistic(name, getId(name), (long) value, sampleTime, unit);
+	}
+	protected BoundedRangeStatistic createBoundedRangeStatistic(String name, short id, long value, long sampleTime, String unit) {
+		return getObjectFactory().createBoundedRangeStatistic(name, id, value, unit, sampleTime, startTime);	
+	}
+	
+	protected TimeStatistic createTimeStatisticFromDouble(ObjectName mbean, String name, long sampleTime, String unit) {
+		double totalTime = 0.0;
+		try {
+			totalTime = (Double) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return getObjectFactory().createTimeStatistic(name, getId(name), (long)totalTime, unit, sampleTime, startTime);
+	}
+	protected TimeStatistic createTimeStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
+		long totalTime = 0l;
+		try {
+			totalTime = (Long) getmBeanServer().getAttribute(mbean, name);
+		} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException | MBeanException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return getObjectFactory().createTimeStatistic(name, getId(name), totalTime, unit, sampleTime, startTime);
 	}
 	
 	protected DoubleStatistic createDoubleStatistic(ObjectName mbean, String name, long sampleTime, String unit) {
@@ -174,7 +232,7 @@ public class XMLPrinter {
 
 							servletStats = new Stat(servletName);
 							servletStats.addStat(createCountStatistic(mbean, "RequestCount", lastSampleTime, "N/A"));
-							servletStats.addStat(createDoubleStatistic(mbean, "ResponseTime", lastSampleTime, "NANOSECOND"));
+							servletStats.addStat(createTimeStatisticFromDouble(mbean, "ResponseTime", lastSampleTime, "NANOSECOND"));
 							
 							webappStats.addNewStat(servletStats);
 						} catch (InstanceNotFoundException | AttributeNotFoundException | ReflectionException
@@ -206,8 +264,7 @@ public class XMLPrinter {
 				jvmStat.addStat(createCountStatistic(mbean, "FreeMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UsedMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
-				//TimeStatistic
-				jvmStat.addStat(createCountStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
+				jvmStat.addStat(createTimeStatistic(mbean, "GcTime", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UpTime", lastSampleTime, "N/A"));
 				jvmStat.addStat(createDoubleStatistic(mbean, "ProcessCPU", lastSampleTime, "N/A"));
 			}
@@ -231,8 +288,8 @@ public class XMLPrinter {
 				Stat sessionStat = new Stat(mbean.getKeyProperty("name"));
 
 				sessionStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
-				sessionStat.addStat(createCountStatistic(mbean, "LiveCount", lastSampleTime, "N/A"));
-				sessionStat.addStat(createCountStatistic(mbean, "ActiveCount", lastSampleTime, "N/A"));
+				sessionStat.addStat(createRangeStatistic(mbean, "LiveCount", lastSampleTime, "N/A"));
+				sessionStat.addStat(createRangeStatistic(mbean, "ActiveCount", lastSampleTime, "N/A"));
 				sessionStat.addStat(createCountStatistic(mbean, "InvalidatedCount", lastSampleTime, "N/A"));
 				sessionStat
 						.addStat(createCountStatistic(mbean, "InvalidatedCountbyTimeout", lastSampleTime, "N/A"));
@@ -261,10 +318,10 @@ public class XMLPrinter {
 				System.out.println(mbean.getCanonicalName());
 				Stat threadStat = new Stat(mbean.getKeyProperty("name"));
 
-				threadStat.addStat(createCountStatisticFromInteger(mbean, "ActiveThreads", 
+				threadStat.addStat(createBoundedRangeStatisticFromInteger(mbean, "ActiveThreads", 
 							lastSampleTime, "N/A"));
 				threadStat.addStat(
-							createCountStatisticFromInteger(mbean, "PoolSize", lastSampleTime, "N/A"));
+							createBoundedRangeStatisticFromInteger(mbean, "PoolSize", lastSampleTime, "N/A"));
 
 				threadsStats.addNewStat(threadStat);
 			}
@@ -294,7 +351,7 @@ public class XMLPrinter {
 			filter = "*";
 
 		long lastSampleTime = System.currentTimeMillis();
-		HashSet<ObjectName> connectionPoolStatsMBeans = retrieveStatMBeans(CONNPOOL_STATS_MBEAN);
+		HashSet<ObjectName> connectionPoolStatsMBeans = retrieveStatMBeans(CONNPOOL_STATS_MBEAN+filter);
 
 		if (connectionPoolStatsMBeans.size() != 0) {
 
@@ -307,12 +364,12 @@ public class XMLPrinter {
 				jdbcStat.addStat(createCountStatistic(mbean, "ConnectionHandleCount", lastSampleTime, "N/A"));
 				jdbcStat.addStat(createCountStatistic(mbean, "CreateCount", lastSampleTime, "N/A"));
 				jdbcStat.addStat(createCountStatistic(mbean, "DestroyCount", lastSampleTime, "N/A"));
-				jdbcStat.addStat(createCountStatistic(mbean, "FreeConnectionCount", lastSampleTime, "N/A"));
+				jdbcStat.addStat(createBoundedRangeStatistic(mbean, "FreeConnectionCount", lastSampleTime, "N/A"));
 				//TimeStatistic
-				jdbcStat.addStat(createDoubleStatistic(mbean, "InUseTime", lastSampleTime, "MILLISECOND"));
+				jdbcStat.addStat(createTimeStatisticFromDouble(mbean, "InUseTime", lastSampleTime, "MILLISECOND"));
 				jdbcStat.addStat(createCountStatistic(mbean, "ManagedConnectionCount", lastSampleTime, "N/A"));
 				//TimeStatistic
-				jdbcStat.addStat(createDoubleStatistic(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
+				jdbcStat.addStat(createTimeStatisticFromDouble(mbean, "WaitTime", lastSampleTime, "MILLISECOND"));
 				jdbcStats.addNewStat(jdbcStat);
 			}
 			return jdbcStats;
@@ -346,30 +403,32 @@ public class XMLPrinter {
 		else
 			server = new Server();
 
+		Stat serverStats = new Stat("server"); 
 		Stat jdbcStats = createJDBCConnectionPoolStats();
 		if (jdbcStats != null)
-			server.addStat(jdbcStats);
+			serverStats.addStat(jdbcStats);
 
 		Stat jmsStats = createJMSConnectionPoolStats();
 		if (jmsStats != null)
-			server.addStat(jmsStats);
+			serverStats.addStat(jmsStats);
 
 		Stat threadStats = createThreadStats();
 		if (threadStats != null)
-			server.addStat(threadStats);
+			serverStats.addStat(threadStats);
 
 		Stat jvmStats = createJvmStats();
 		if (jvmStats != null)
-			server.addStat(jvmStats);
+			serverStats.addStat(jvmStats);
 
 		Stat sessionStats = createSessionStats();
 		if (sessionStats != null)
-			server.addStat(sessionStats);
+			serverStats.addStat(sessionStats);
 
 		Stat servletStats = createServletStats();
 		if (servletStats != null)
-			server.addStat(servletStats);
+			serverStats.addStat(servletStats);
 
+		server.addStat(serverStats);
 		node.addServer(server);
 		pm.addNode(node);
 		pm.setResponseStatus("success");
