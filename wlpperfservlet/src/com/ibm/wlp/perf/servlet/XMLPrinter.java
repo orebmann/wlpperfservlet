@@ -40,9 +40,16 @@ public class XMLPrinter {
 		startTime = System.currentTimeMillis();
 	}
 	
+	public boolean printJvmStatistic = true;
+	public boolean printServletStatistic = true;
+	public boolean printSessionStatistic = true;
+	public boolean printThreadStatistic = true;
+	public boolean printConnectionPoolStatistic = true;
+	
 	static {
 		ids = new HashMap<String, Short>();
 		// JVMs
+		ids.put("Heap", (short)2);                    // BoundedRangeStatistic
 		ids.put("FreeMemory", (short)2);                 // CountStatistic
 		ids.put("UsedMemory", (short)3);                 // CountStatistic
 		ids.put("GcCount", (short)11);                   // CountStatistic
@@ -273,6 +280,7 @@ public class XMLPrinter {
 			Stat jvmStat = new Stat("JVM Runtime");
 			for (ObjectName mbean : jvmStatsMBeans) {
 
+				jvmStat.addStat(createBoundedRangeStatistic(mbean, "Heap", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "FreeMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "UsedMemory", lastSampleTime, "N/A"));
 				jvmStat.addStat(createCountStatistic(mbean, "GcCount", lastSampleTime, "N/A"));
@@ -418,27 +426,27 @@ public class XMLPrinter {
 
 		Stat serverStats = new Stat("server"); 
 		Stat jdbcStats = createJDBCConnectionPoolStats();
-		if (jdbcStats != null)
+		if (printConnectionPoolStatistic && (jdbcStats != null)) 
 			serverStats.addStat(jdbcStats);
 
 		Stat jmsStats = createJMSConnectionPoolStats();
-		if (jmsStats != null)
+		if (printConnectionPoolStatistic && (jmsStats != null))
 			serverStats.addStat(jmsStats);
 
 		Stat threadStats = createThreadStats();
-		if (threadStats != null)
+		if (printThreadStatistic && (threadStats != null))
 			serverStats.addStat(threadStats);
 
 		Stat jvmStats = createJvmStats();
-		if (jvmStats != null)
+		if (printJvmStatistic && (jvmStats != null))
 			serverStats.addStat(jvmStats);
 
 		Stat sessionStats = createSessionStats();
-		if (sessionStats != null)
+		if (printSessionStatistic && (sessionStats != null))
 			serverStats.addStat(sessionStats);
 
 		Stat servletStats = createServletStats();
-		if (servletStats != null)
+		if (printServletStatistic && (servletStats != null))
 			serverStats.addStat(servletStats);
 
 		server.addStat(serverStats);

@@ -30,6 +30,15 @@ public class PerfServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 	    XMLPrinter xmlp = new XMLPrinter();
 	    try {
+	    	String filter = request.getParameter("filter");
+	    	if (filter != null) {
+	    		
+	    	  xmlp.printServletStatistic = filter.equalsIgnoreCase("servlets") ? true : false;
+	    	  xmlp.printSessionStatistic = filter.equalsIgnoreCase("sessions") ? true : false;
+	    	  xmlp.printConnectionPoolStatistic = filter.equalsIgnoreCase("connections") ? true : false;
+	    	  xmlp.printThreadStatistic = filter.equalsIgnoreCase("threads") ? true : false;
+	    	  xmlp.printJvmStatistic = filter.equalsIgnoreCase("jvm") ? true : false;
+	    	}
 			xmlp.generateXML(response.getOutputStream());
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
